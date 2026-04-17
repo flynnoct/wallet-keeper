@@ -1,5 +1,4 @@
 import base64
-import json
 
 
 async def parse(request) -> dict:
@@ -8,14 +7,14 @@ async def parse(request) -> dict:
     except Exception:
         return {"status": "error", "message": "Invalid JSON body"}
 
-    # Extract the API key from the body or the Authorization header
-    api_key = body.get("api_key")
-    if not api_key:
+    # Extract the ID from the body or the Authorization header
+    web_id = body.get("web_id")
+    if not web_id:
         auth_header = request.headers.get("Authorization") or ""
         if auth_header.startswith("Bearer "):
-            api_key = auth_header[len("Bearer "):]
-    if not api_key:
-        return {"status": "error", "message": "API key is required"}
+            web_id = auth_header[len("Bearer "):]
+    if not web_id:
+        return {"status": "error", "message": "Web ID is required"}
     
     # Parse the data type
     data_type = body.get("type", "").lower()
@@ -37,8 +36,9 @@ async def parse(request) -> dict:
             return {"status": "error", "message": "Invalid base64 content"}
 
     return {
-        "status": "success", 
+        "status": "success",
+        "source": "web_api",
         "content_type": data_type, 
         "content": content,
-        "id": api_key
+        "user_id": web_id
     }
