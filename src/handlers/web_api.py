@@ -1,6 +1,5 @@
 import base64
 import json
-from workers import Response
 
 
 async def parse(request) -> dict:

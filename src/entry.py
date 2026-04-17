@@ -1,10 +1,11 @@
 from workers import Response, WorkerEntrypoint
 from urllib.parse import urlparse
 
+from llm_processor import extract
 from handlers import web_api as web_api_handler
 
 class Default(WorkerEntrypoint):
-    async def fetch(self, request):
+    async def fetch(self, request, env):
         url_str = request.url
         path = urlparse(url_str).path
         if path == "/health":
@@ -19,5 +20,7 @@ class Default(WorkerEntrypoint):
         if result["status"] == "error":
             return Response(result["message"], status=400)
         # TODO: Add logic
+
+        extracted_record = await extract(result["content_type"], result["content"], self.env)
         import json
-        return Response(json.dumps(result), status=200)
+        return Response(json.dumps(extracted_record), status=200)

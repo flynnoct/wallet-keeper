@@ -1,5 +1,5 @@
 import json
-import urllib.request
+from workers import fetch
 
 SYSTEM_PROMPT = """你是一个记账助手。从用户提供的文字、图片或语音转录中提取消费/收入信息，输出纯 JSON，不要有任何多余文字。
 
@@ -15,7 +15,7 @@ SYSTEM_PROMPT = """你是一个记账助手。从用户提供的文字、图片�
 如果某字段无法确定：date 用今天日期，channel 用"未知"，category 用"其他"。"""
 
 
-def extract(content_type: str, content, env) -> dict:
+async def extract(content_type: str, content, env) -> dict:
     api_key = env.API_KEY
     api_endpoint = env.API_ENDPOINT
 
@@ -25,14 +25,14 @@ def extract(content_type: str, content, env) -> dict:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content}
         ]
-        response = _extract(message, model, api_key, api_endpoint)
+        response = await _extract(message, model, api_key, api_endpoint)
         response_content = json.loads(response.get("choices", [{}])[0].get("message", {}).get("content", ""))
     else:
         pass
     return response_content
 
 
-def _extract(messages, model, api_key, api_endpoint):
+async def _extract(messages, model, api_key, api_endpoint):
     request_body = {
         "model": model,
         "messages": messages,
@@ -64,8 +64,6 @@ def _extract(messages, model, api_key, api_endpoint):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
-    req = urllib.request.Request(api_endpoint, method="POST", headers=headers, data=json.dumps(request_body).encode("utf-8"))
-    with urllib.request.urlopen(req) as response:
-        response_data = response.read().decode("utf-8")
-        response_json = json.loads(response_data)
-        return response_json
+    response = await fetch(api_endpoint, method="POST", headers=headers, body=json.dumps(request_body))
+    response_data = await response.text()
+    return json.loads(response_data)
