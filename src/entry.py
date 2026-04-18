@@ -1,7 +1,7 @@
 from workers import Response, WorkerEntrypoint
 from urllib.parse import urlparse
 
-from auth import verify_id
+from auth import auth_id
 from handlers import web_api as web_api_handler
 from llm_processor import extract
 from notion_connector import publish_to_notion
@@ -22,10 +22,12 @@ class Default(WorkerEntrypoint):
             return Response(result["message"], status=400)
 
         # Verify the ID and source
-        allowed = await verify_id(str(result["user_id"]), result["source"], self.env)
-        if not allowed:
+        user = await auth_id(str(result["user_id"]), result["source"], self.env)
+        if not user:
             return Response("Unauthorized", status=401)
 
         extracted_record = await extract(result["content_type"], result["content"], self.env)
-        success = publish_to_notion(extracted_record, self.env)
-        return {"status": "success" if success else "error"}
+        success = await publish_to_notion(extracted_record, user, self.env)
+        if success:
+            return Response("OK", status=200)
+        return Response("Failed to publish to Notion", status=500)
