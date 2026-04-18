@@ -27,9 +27,10 @@ class Default(WorkerEntrypoint):
                 return Response("Unauthorized", status=401)
 
             # Extract the record and publish to Notion
-            content_type = result["content_type"]
+            kind = result["kind"]
             content = result["content"]
-            extracted_record = await extract(content_type, content, self.env)
+            attachment = result["attachment"]
+            extracted_record = await extract(kind, content, attachment, self.env)
             success = await publish_to_notion(extracted_record, username, self.env)
             if success:
                 return Response("Published to Notion", status=200)

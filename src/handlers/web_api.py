@@ -1,4 +1,5 @@
 import base64
+import json
 
 
 async def parse(request) -> dict:
@@ -17,8 +18,8 @@ async def parse(request) -> dict:
         return {"status": "error", "message": "Web ID is required"}
     
     # Parse the data type
-    data_type = body.get("type", "").lower()
-    if data_type not in ["text", "image", "audio"]:
+    kind = body.get("kind", "").lower()
+    if kind not in ["text", "image", "audio"]:
         return {"status": "error", "message": "Invalid data type. Must be 'text', 'image', or 'audio'"}
     
     # Extract the data
@@ -27,17 +28,21 @@ async def parse(request) -> dict:
         return {"status": "error", "message": "Content is required"}
     
     # Handle the content based on the data type
-    if data_type == "text":
+    if kind == "text":
         content = str(raw_content)
-    else:  # For image and audio, we expect a base64-encoded string 
+        attachment = None
+    elif kind == "image":
         try:
-            content = base64.b64decode(raw_content)
+            content = str(raw_content)
+            attachment = str(body.get("attachment"))
         except Exception:
-            return {"status": "error", "message": "Invalid base64 content"}
-
+            return {"status": "error", "message": "Invalid image data"}
+    else: # audio
+        return {"status": "error", "message": "Unsupported data type"}
     return {
         "status": "success",
-        "content_type": data_type, 
+        "kind": kind, 
         "content": content,
+        "attachment": attachment,
         "web_id": web_id
     }
