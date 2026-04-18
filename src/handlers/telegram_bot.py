@@ -5,7 +5,7 @@ TELEGRAM_API_BASE = "https://api.telegram.org/bot"
 TELEGRAM_FILE_BASE = "https://api.telegram.org/file/bot"
 
 
-async def _get_photo_base64(file_id: str, token: str) -> str:
+async def _get_data_base64(file_id: str, token: str) -> str:
     get_file_url = f"{TELEGRAM_API_BASE}{token}/getFile?file_id={file_id}"
     async with httpx.AsyncClient() as client:
         response = await client.get(get_file_url)
@@ -40,12 +40,27 @@ async def parse(request, env) -> dict:
         largest = max(photos, key=lambda p: p.get("file_size", 0))
         file_id = largest["file_id"]
         caption = message.get("caption", "")
-        attachment = await _get_photo_base64(file_id, env.TELEGRAM_BOT_TOKEN)
+        attachment = await _get_data_base64(file_id, env.TELEGRAM_BOT_TOKEN)
         return {
             "status": "success",
             "source": "telegram",
             "kind": "image",
             "content": caption,
+            "attachment": attachment,
+            "user_id": str(telegram_id),
+            "chat_id": chat_id,
+        }
+
+    # Handle voice messages
+    voice = message.get("voice")
+    if voice:
+        file_id = voice["file_id"]
+        attachment = await _get_data_base64(file_id, env.TELEGRAM_BOT_TOKEN)
+        return {
+            "status": "success",
+            "source": "telegram",
+            "kind": "audio",
+            "content": "",
             "attachment": attachment,
             "user_id": str(telegram_id),
             "chat_id": chat_id,

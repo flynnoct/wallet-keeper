@@ -1,3 +1,4 @@
+import base64
 import json
 import httpx
 from datetime import datetime
@@ -26,19 +27,22 @@ async def extract(kind: str, content, attachment, env) -> dict:
     model = env.MODEL
     if kind == "text":
         message.append({"role": "user", "content": content})
-    if kind == "image" and attachment:
+    elif kind == "image" and attachment:
         message.append({
-            "role": "user", 
+            "role": "user",
             "content": [{
-                "type": "image_url", 
+                "type": "image_url",
                 "image_url": {"url": f"data:image/png;base64,{attachment}"}
             }, {
                 "type": "text",
                 "text": content
             }]
         })
-    else:
-        pass
+    elif kind == "audio" and attachment:
+        audio_bytes = base64.b64decode(attachment)
+        whisper_result = await env.AI.run("@cf/openai/whisper", {"audio": list(audio_bytes)})
+        transcription = whisper_result.text
+        message.append({"role": "user", "content": transcription})
     response = await _extract(message, model, api_key, api_endpoint)
     response_content = json.loads(response.get("choices", [{}])[0].get("message", {}).get("content", ""))
     return response_content
