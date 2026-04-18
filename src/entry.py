@@ -84,7 +84,7 @@ class Default(WorkerEntrypoint):
             else:
                 await telegram_bot_handler.send_message(
                     chat_id,
-                    "❌ 记录保存失败\n\n记录已识别，但写入 Notion 时出错，请稍后重试。",
+                    "❌ 记录保存失败\n记录已识别，但写入 Notion 时出错，请稍后重试。",
                     self.env,
                 )
                 return Response("OK", status=200)
