@@ -1,5 +1,5 @@
 import json
-from workers import fetch
+import httpx
 
 NOTION_API_VERSION = "2026-03-11"
 NOTION_PAGES_URL = "https://api.notion.com/v1/pages"
@@ -48,5 +48,6 @@ async def publish_to_notion(record: dict, user: str, env):
         "Notion-Version": NOTION_API_VERSION
     }
 
-    response = await fetch(NOTION_PAGES_URL, method="POST", headers=headers, body=json.dumps(body))
-    return response.status == 200
+    async with httpx.AsyncClient() as client:
+        response = await client.post(NOTION_PAGES_URL, headers=headers, content=json.dumps(body))
+    return response.status_code == 200

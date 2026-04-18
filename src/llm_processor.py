@@ -1,6 +1,6 @@
 import json
+import httpx
 from datetime import datetime
-from workers import fetch
 
 SYSTEM_PROMPT = """你是一个记账助手。从用户提供的文字、图片或语音转录中提取消费/收入信息，输出纯JSON。
 
@@ -76,6 +76,6 @@ async def _extract(messages, model, api_key, api_endpoint):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
-    response = await fetch(api_endpoint, method="POST", headers=headers, body=json.dumps(request_body))
-    response_data = await response.text()
-    return json.loads(response_data)
+    async with httpx.AsyncClient() as client:
+        response = await client.post(api_endpoint, headers=headers, content=json.dumps(request_body))
+    return json.loads(response.text)

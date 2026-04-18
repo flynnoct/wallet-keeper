@@ -39,7 +39,7 @@ class Default(WorkerEntrypoint):
 
         # Telegram Bot webhook
         elif path == "/telegram/webhook" and request.method == "POST":
-            result = await telegram_bot_handler.parse(request)
+            result = await telegram_bot_handler.parse(request, self.env)
             if result["status"] == "error":
                 return Response("OK", status=200)
             if result["status"] == "ignored":
@@ -53,9 +53,10 @@ class Default(WorkerEntrypoint):
                 await telegram_bot_handler.send_message(chat_id, "未授权，请联系管理员。", self.env)
                 return Response("OK", status=200)
             
-            content_type = result["content_type"]
+            kind = result["kind"]
             content = result["content"]
-            extracted_record = await extract(content_type, content, self.env)
+            attachment = result["attachment"]
+            extracted_record = await extract(kind, content, attachment, self.env)
             success = await publish_to_notion(extracted_record, username, self.env)
             if success:
                 reply = (
