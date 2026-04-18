@@ -32,7 +32,7 @@
 	 */
 	"vars": {
 		"MODEL": "doubao-seed-2-0-mini-260215",
-        "API_ENDPOINT": "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+		"AI_API_ENDPOINT": "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
 	}
 	/**
 	 * Static Assets

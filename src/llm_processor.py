@@ -16,8 +16,8 @@ SYSTEM_PROMPT = """你是一个记账助手。从用户提供的文字、图片�
 
 
 async def extract(content_type: str, content, env) -> dict:
-    api_key = env.API_KEY
-    api_endpoint = env.API_ENDPOINT
+    api_key = env.AI_API_KEY
+    api_endpoint = env.AI_API_ENDPOINT
 
     if content_type == "text":
         model = env.MODEL

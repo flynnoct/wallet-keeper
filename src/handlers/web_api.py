@@ -37,8 +37,7 @@ async def parse(request) -> dict:
 
     return {
         "status": "success",
-        "source": "web_api",
         "content_type": data_type, 
         "content": content,
-        "user_id": web_id
+        "web_id": web_id
     }
