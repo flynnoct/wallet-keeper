@@ -64,8 +64,8 @@ async def parse(request, env) -> dict:
     }
 
 
-async def send_message(chat_id: int, text: str, env):
+async def send_message(chat_id: int, text: str, env, parse_mode: str = "HTML"):
     token = env.TELEGRAM_BOT_TOKEN
     url = f"{TELEGRAM_API_BASE}{token}/sendMessage"
     async with httpx.AsyncClient() as client:
-        await client.post(url, json={"chat_id": chat_id, "text": text})
+        await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": parse_mode})

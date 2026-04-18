@@ -1,4 +1,4 @@
-import logging
+import json
 from workers import Response, WorkerEntrypoint
 from urllib.parse import urlparse
 
@@ -27,14 +27,18 @@ class Default(WorkerEntrypoint):
                 return Response("Unauthorized", status=401)
 
             # Extract the record and publish to Notion
+            response = {}
             kind = result["kind"]
             content = result["content"]
             attachment = result["attachment"]
             extracted_record = await extract(kind, content, attachment, self.env)
+            response["record"] = extracted_record
             success = await publish_to_notion(extracted_record, username, self.env)
             if success:
-                return Response("Published to Notion", status=200)
-            return Response("Failed to publish to Notion", status=500)
+                response["message"] = "Record saved to Notion"
+                return Response(json.dumps(response), status=200)
+            response["message"] = "Failed to save record to Notion"
+            return Response(json.dumps(response), status=500)
 
 
         # Telegram Bot webhook
@@ -50,26 +54,39 @@ class Default(WorkerEntrypoint):
             username = await auth_id(user_id, "telegram", self.env)
 
             if not username:
-                await telegram_bot_handler.send_message(chat_id, "未授权，请联系管理员。", self.env)
+                await telegram_bot_handler.send_message(
+                    chat_id,
+                    "🔒 未授权访问\n\n您的账号尚未授权，请联系管理员开通权限。",
+                    self.env,
+                )
                 return Response("OK", status=200)
-            
+
             kind = result["kind"]
             content = result["content"]
             attachment = result["attachment"]
             extracted_record = await extract(kind, content, attachment, self.env)
             success = await publish_to_notion(extracted_record, username, self.env)
             if success:
+                amount = extracted_record.get("amount", 0)
+                amount_str = f"-{abs(amount):.2f}" if amount < 0 else f"+{amount:.2f}"
+                income_or_expense = "支出" if amount < 0 else "收入"
                 reply = (
-                    f"名称：{extracted_record.get('name')}\n"
-                    f"金额：{extracted_record.get('amount')} 元\n"
+                    f"✅ 记录已保存\n"
+                    f"──────────────\n"
+                    f"{extracted_record.get('name')}\n"
+                    f"{income_or_expense}：{amount_str}元\n"
                     f"日期：{extracted_record.get('date')}\n"
                     f"类别：{extracted_record.get('category')}\n"
-                    f"渠道：{extracted_record.get('channel')}"
+                    f"渠道：{extracted_record.get('channel')}\n"
                 )
-                await telegram_bot_handler.send_message(chat_id, "Record saved!\n" + reply, self.env)
+                await telegram_bot_handler.send_message(chat_id, reply, self.env)
                 return Response("OK", status=200)
             else:
-                await telegram_bot_handler.send_message(chat_id, "Failed to save record.", self.env)
+                await telegram_bot_handler.send_message(
+                    chat_id,
+                    "❌ 记录保存失败\n\n记录已识别，但写入 Notion 时出错，请稍后重试。",
+                    self.env,
+                )
                 return Response("OK", status=200)
         else:
             return Response("Not Found", status=404)
